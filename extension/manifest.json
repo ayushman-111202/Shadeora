@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Shadeora Theme Customizer",
+  "version": "1.1",
+  "description": "Customize themes for popular websites like Google, YouTube, LinkedIn, Facebook, and Wikipedia.",
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": ["*://*.google.com/*", "*://*.youtube.com/*", "*://*.linkedin.com/*", "*://*.facebook.com/*", "*://*.wikipedia.org/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.google.com/*", "*://*.youtube.com/*", "*://*.linkedin.com/*", "*://*.facebook.com/*", "*://*.wikipedia.org/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
