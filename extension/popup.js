@@ -7,9 +7,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             { name: "High Contrast", background: "#000000", text: "#ffff00" }
         ],
         youtube: [
-            { name: "Dark Mode", background: "#181818", text: "#ffffff" },
-            { name: "Blue Tint", background: "#001f3f", text: "#ffffff" },
-            { name: "Soft White", background: "#f9f9f9", text: "#333" }
+            { name: "Caramel Brown", background: "#ffd59a", text: "#333333", secondary: "#000000" },
+            { name: "Dark Mode", background: "#000000", text: "#ffffff", secondary: "#212121" },
+            { name: "Midnight Blue", background: "#0a1a2f", text: "#e8f0fe", secondary: "#1a2f4f" }
         ],
         linkedin: [
             { name: "Muted Blue", background: "#283e4a", text: "#ffffff" },
@@ -46,6 +46,37 @@ document.addEventListener("DOMContentLoaded", async () => {
                 themeItem.textContent = theme.name;
                 themeItem.style.background = theme.background;
                 themeItem.style.color = theme.text;
+
+                themeItem.addEventListener("click", () => {
+                    chrome.storage.sync.set({ [`theme_${siteName}`]: theme }, () => {
+                        chrome.scripting.executeScript({
+                            target: { tabId: tabs[0].id },
+                            files: ["content.js"]
+                        }).then(() => {
+                            chrome.scripting.executeScript({
+                                target: { tabId: tabs[0].id },
+                                func: (theme) => {
+                                    // Force refresh YouTube player
+                                    const video = document.querySelector("video");
+                                    if (video) {
+                                        video.style.backgroundColor = theme.background;
+                                    }
+                                    
+                                    // Update metadata
+                                    document.documentElement.style.setProperty(
+                                        "--yt-spec-base-background", 
+                                        theme.background
+                                    );
+                                    document.documentElement.style.setProperty(
+                                        "--yt-spec-text-primary", 
+                                        theme.text
+                                    );
+                                },
+                                args: [theme]
+                            });
+                        });
+                    });
+                });
 
                 themeItem.addEventListener("click", () => {
                     chrome.storage.sync.set({ [`theme_${siteName}`]: theme }, () => {
