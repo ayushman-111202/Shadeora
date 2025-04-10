@@ -2,29 +2,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     const supportedSites = ["google", "youtube", "linkedin", "facebook", "wikipedia"];
     const themes = {
         google: [
+            { name: "Light Mode", background: "#ffffff", text: "#202124" },
             { name: "Dark Mode", background: "#202124", text: "#e8eaed" },
-            { name: "Sepia", background: "#f5deb3", text: "#5e4637" },
-            { name: "High Contrast", background: "#000000", text: "#ffff00" }
+            { name: "Blinky Blue", background: "#e6f0ff", text: "#003366" },
+            { name: "Cherry Pink", background: "#ffe6f2", text: "#660033" },
+            { name: "Glossy Green", background: "#e6ffe6", text: "#006600" }
         ],
         youtube: [
-            { name: "Caramel Brown", background: "#ffd59a", text: "#333333", secondary: "#000000" },
-            { name: "Dark Mode", background: "#000000", text: "#ffffff", secondary: "#212121" },
-            { name: "Midnight Blue", background: "#0a1a2f", text: "#e8f0fe", secondary: "#1a2f4f" }
+            { name: "Light Mode", background: "#ffffff", text: "#030303" },
+            { name: "Dark Mode", background: "#0f0f0f", text: "#f1f1f1" },
+            { name: "Apple Red", background: "#ffebee", text: "#b71c1c" },
+            { name: "Chocolate Brown", background: "#efebe9", text: "#4e342e" },
+            { name: "Mango Yellow", background: "#fffde7", text: "#f9a825" }
         ],
         linkedin: [
-            { name: "Muted Blue", background: "#283e4a", text: "#ffffff" },
-            { name: "Warm Grey", background: "#b0a999", text: "#3c3c3c" },
-            { name: "Professional Dark", background: "#1c1c1c", text: "#f5f5f5" }
+            { name: "Light Mode", background: "#ffffff", text: "#000000" },
+            { name: "Dark Mode", background: "#1c1c1c", text: "#f5f5f5" },
+            { name: "Bubbly Blue", background: "#e3f2fd", text: "#0d47a1" },
+            { name: "Goblin Green", background: "#e8f5e9", text: "#1b5e20" },
+            { name: "Peachy Pink", background: "#fce4ec", text: "#ad1457" }
         ],
         facebook: [
-            { name: "Classic Dark", background: "#18191A", text: "#E4E6EB" },
-            { name: "Light Blue", background: "#dfe3ee", text: "#1c1e21" },
-            { name: "Minimal", background: "#f5f5f5", text: "#333" }
+            { name: "Light Mode", background: "#f0f2f5", text: "#1c1e21" },
+            { name: "Dark Mode", background: "#18191A", text: "#E4E6EB" },
+            { name: "Bingo Blue", background: "#e1f5fe", text: "#01579b" },
+            { name: "Gothic Green", background: "#e8f5e9", text: "#2e7d32" },
+            { name: "Particle Purple", background: "#f3e5f5", text: "#6a1b9a" }
         ],
         wikipedia: [
-            { name: "Paper White", background: "#fbf1d3", text: "#333" },
+            { name: "Light Mode", background: "#f8f9fa", text: "#202122" },
             { name: "Dark Mode", background: "#202122", text: "#ffffff" },
-            { name: "Grey Mode", background: "#bdbdbd", text: "#222" }
+            { name: "Caramel Brown", background: "#efebe9", text: "#5d4037" },
+            { name: "Thinking Teal", background: "#e0f2f1", text: "#004d40" },
+            { name: "Atom Amber", background: "#fff8e1", text: "#ff6f00" }
         ]
     };
 
@@ -48,59 +58,39 @@ document.addEventListener("DOMContentLoaded", async () => {
                 themeItem.style.color = theme.text;
 
                 themeItem.addEventListener("click", () => {
-                    chrome.storage.sync.set({ [`theme_${siteName}`]: theme }, () => {
+                    chrome.storage.sync.set({ 
+                        [`theme_${siteName}`]: theme,
+                        lastAppliedTheme: { site: siteName, theme: theme }
+                    }, () => {
                         chrome.scripting.executeScript({
                             target: { tabId: tabs[0].id },
                             files: ["content.js"]
-                        }).then(() => {
-                            chrome.scripting.executeScript({
-                                target: { tabId: tabs[0].id },
-                                func: (theme) => {
-                                    // Force refresh YouTube player
-                                    const video = document.querySelector("video");
-                                    if (video) {
-                                        video.style.backgroundColor = theme.background;
-                                    }
-                                    
-                                    // Update metadata
-                                    document.documentElement.style.setProperty(
-                                        "--yt-spec-base-background", 
-                                        theme.background
-                                    );
-                                    document.documentElement.style.setProperty(
-                                        "--yt-spec-text-primary", 
-                                        theme.text
-                                    );
-                                },
-                                args: [theme]
-                            });
                         });
-                    });
-                });
-
-                themeItem.addEventListener("click", () => {
-                    chrome.storage.sync.set({ [`theme_${siteName}`]: theme }, () => {
-                        chrome.scripting.executeScript({
-                            target: { tabId: tabs[0].id },
-                            files: ["content.js"]
-                        }, () => {
-                            chrome.scripting.executeScript({
-                                target: { tabId: tabs[0].id },
-                                function: applyTheme,
-                                args: [theme]
-                            });
-                        });
-
                     });
                 });
 
                 themeList.appendChild(themeItem);
             });
+
+            document.getElementById("reset-theme").addEventListener("click", () => {
+                chrome.storage.sync.remove(`theme_${siteName}`, () => {
+                    chrome.scripting.executeScript({
+                        target: { tabId: tabs[0].id },
+                        func: () => {
+                            document.documentElement.style = "";
+                            document.body.style = "";
+                            const allElements = document.querySelectorAll('*');
+                            allElements.forEach(el => {
+                                el.style = "";
+                                if (el.shadowRoot) {
+                                    el.shadowRoot.innerHTML = '';
+                                }
+                            });
+                            location.reload();
+                        }
+                    });
+                });
+            });
         }
     });
 });
-
-function applyTheme(theme) {
-    document.body.style.backgroundColor = theme.background;
-    document.body.style.color = theme.text;
-}

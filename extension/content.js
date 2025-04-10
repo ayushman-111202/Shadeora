@@ -1,111 +1,99 @@
-// Apply theme to YouTube's shadow DOM elements
-function applyYouTubeTheme(theme) {
-    // Function to inject styles into shadow roots
-    const styleShadowDOM = (root) => {
-        const style = document.createElement('style');
-        style.textContent = `
-            :host {
+function applyThemeToAllElements(theme) {
+    const styleTag = document.createElement('style');
+    styleTag.id = 'shadeora-theme';
+    styleTag.textContent = `
+        :root, body, * {
+            background-color: ${theme.background} !important;
+            color: ${theme.text} !important;
+        }
+        
+        :host, :host * {
+            background-color: ${theme.background} !important;
+            color: ${theme.text} !important;
+        }
+    `;
+    
+    if (document.head.querySelector('#shadeora-theme')) {
+        document.head.removeChild(document.head.querySelector('#shadeora-theme'));
+    }
+    document.head.appendChild(styleTag);
+
+    const processShadowRoots = (node) => {
+        if (node.shadowRoot) {
+            const shadowStyle = document.createElement('style');
+            shadowStyle.textContent = `
+                :host, * {
+                    background-color: ${theme.background} !important;
+                    color: ${theme.text} !important;
+                }
+            `;
+            node.shadowRoot.appendChild(shadowStyle);
+            node.shadowRoot.querySelectorAll('*').forEach(child => processShadowRoots(child));
+        }
+    };
+
+    document.querySelectorAll('*').forEach(node => processShadowRoots(node));
+
+    if (window.location.hostname.includes("youtube")) {
+        const videoBackgroundStyle = document.createElement('style');
+        videoBackgroundStyle.textContent = `
+            ytd-app, ytd-watch-flexy, tp-yt-paper-dialog {
                 background-color: ${theme.background} !important;
-                color: ${theme.text} !important;
             }
-            ytd-app {
+            video {
                 background-color: ${theme.background} !important;
-            }
-            #content.ytd-app {
-                background-color: ${theme.background} !important;
-            }
-            ytd-watch-flexy {
-                background-color: ${theme.background} !important;
-            }
-            tp-yt-paper-dialog {
-                background-color: ${theme.background} !important;
-                color: ${theme.text} !important;
             }
         `;
-        root.appendChild(style);
-    };
-
-    // Recursive function to find all shadow roots
-    const traverseShadowDOM = (node) => {
-        if (node.shadowRoot) {
-            styleShadowDOM(node.shadowRoot);
-            const children = node.shadowRoot.children;
-            for (let child of children) {
-                traverseShadowDOM(child);
-            }
-        }
-        for (let child of node.children) {
-            traverseShadowDOM(child);
-        }
-    };
-
-    // Initial application
-    traverseShadowDOM(document.documentElement);
-
-    // Watch for dynamic content changes
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-                traverseShadowDOM(node);
-            });
-        });
-    });
-
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true
-    });
-}
-
-// Universal theme application
-function applyTheme(theme) {
-    // Apply to root elements
-    document.documentElement.style.setProperty("background-color", theme.background, "important");
-    document.documentElement.style.setProperty("color", theme.text, "important");
-    document.body.style.setProperty("background-color", theme.background, "important");
-    document.body.style.setProperty("color", theme.text, "important");
-
-    // YouTube-specific handling
-    if (window.location.hostname.includes("youtube")) {
-        applyYouTubeTheme(theme);
+        document.head.appendChild(videoBackgroundStyle);
     }
 }
 
-// Initialize with MutationObserver for SPA navigation
 const initTheme = () => {
     chrome.storage.sync.get(null, (data) => {
         const url = new URL(window.location.href);
         const siteKey = Object.keys(data).find(key => 
-            url.hostname.includes(key.replace("theme_", ""))
+            key.startsWith("theme_") && url.hostname.includes(key.replace("theme_", ""))
         );
 
         if (siteKey && data[siteKey]) {
-            applyTheme(data[siteKey]);
+            applyThemeToAllElements(data[siteKey]);
         }
     });
 
-    // Re-apply on SPA navigation
-    const bodyObserver = new MutationObserver((mutations) => {
+    const observer = new MutationObserver(mutations => {
         mutations.forEach(() => {
-            chrome.storage.sync.get(null, (data) => {
+            chrome.storage.sync.get(null, data => {
                 const url = new URL(window.location.href);
                 const siteKey = Object.keys(data).find(key => 
-                    url.hostname.includes(key.replace("theme_", ""))
+                    key.startsWith("theme_") && url.hostname.includes(key.replace("theme_", ""))
                 );
                 if (siteKey && data[siteKey]) {
-                    applyTheme(data[siteKey]);
+                    applyThemeToAllElements(data[siteKey]);
                 }
             });
         });
     });
 
-    bodyObserver.observe(document.body, {
+    observer.observe(document, {
         childList: true,
-        subtree: true
+        subtree: true,
+        attributes: true,
+        characterData: true
+    });
+
+    window.addEventListener('load', () => {
+        chrome.storage.sync.get(null, data => {
+            const url = new URL(window.location.href);
+            const siteKey = Object.keys(data).find(key => 
+                key.startsWith("theme_") && url.hostname.includes(key.replace("theme_", ""))
+            );
+            if (siteKey && data[siteKey]) {
+                applyThemeToAllElements(data[siteKey]);
+            }
+        });
     });
 };
 
-// Start with DOMContentLoaded and track dynamic changes
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initTheme);
 } else {
